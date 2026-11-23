@@ -1,6 +1,5 @@
 name: Build Open To Do
 
-
 # Builds release binaries for Windows, Android, iOS and Linux on every push
 # to main and on version tags. All four jobs are independent and run in
 # parallel; a failure in one platform does not block the others.
@@ -13,7 +12,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 
 jobs:
   analyze-and-test:
@@ -30,10 +28,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
-
   windows:
     name: Windows
     needs: analyze-and-test
+    # windows-2022 still ships Visual Studio 2019, which Flutter 3.24's
+    # Windows build expects (CMake generator "Visual Studio 16 2019").
+    # windows-latest no longer provides it, so the build cannot find VS.
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,6 @@ jobs:
           path: build/windows/x64/runner/Release/
           if-no-files-found: error
 
-
   android:
     name: Android
     needs: analyze-and-test
@@ -67,3 +66,104 @@ jobs:
           flutter-version: '3.24.5'
           channel: 'stable'
           cache: true
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-todo-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS
+    needs: analyze-and-test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-todo-ios
+          path: build/ios/iphoneos/Runner.app
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+      - run: flutter build linux --release
+      - name: Upload Linux bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-todo-linux
+          path: build/linux/x64/release/bundle/
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: [windows, android, ios, linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: open-todo-windows
+          path: dist/windows
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: open-todo-android-apk
+          path: dist/android
+      - name: Download iOS build
+        uses: actions/download-artifact@v4
+        with:
+          name: open-todo-ios
+          path: dist/ios
+      - name: Download Linux bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: open-todo-linux
+          path: dist/linux
+      - name: Package release files
+        run: |
+          cd dist
+          mv android/app-release.apk "open-todo-${{ github.ref_name }}-android.apk"
+          (cd windows && zip -qr "../open-todo-${{ github.ref_name }}-windows.zip" .)
+          (cd ios && zip -qr "../open-todo-${{ github.ref_name }}-ios.zip" .)
+          tar -czf "open-todo-${{ github.ref_name }}-linux.tar.gz" -C linux .
+          ls -lh
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/open-todo-${{ github.ref_name }}-windows.zip
+            dist/open-todo-${{ github.ref_name }}-android.apk
+            dist/open-todo-${{ github.ref_name }}-ios.zip
+            dist/open-todo-${{ github.ref_name }}-linux.tar.gz
+          generate_release_notes: true
+          body: |
+            Open To Do ${{ github.ref_name }} — 免费开源的微软待办替代品，Windows / Android / iOS / Linux 四端可用，数据只存本机。
+            Open To Do ${{ github.ref_name }} — a free, open-source Microsoft To Do replacement for Windows / Android / iOS / Linux. Local-first, no account, no server.
