@@ -6,7 +6,10 @@ class SettingsService extends ChangeNotifier {
   static const String _keyTheme = 'theme_mode';
   static const String _keyFirstDay = 'first_day_of_week';
 
-  ThemeMode _themeMode = ThemeMode.system;
+  // Default to light: the system dark mode used to wash the UI out on
+  // some phones (forced darkening), so light is the safe first-run look.
+  // The user can still pick System or Dark in Settings.
+  ThemeMode _themeMode = ThemeMode.light;
   int _firstDayOfWeek = 1; // 1 = Monday (ISO), 0 = Sunday
 
   ThemeMode get themeMode => _themeMode;
@@ -21,8 +24,11 @@ class SettingsService extends ChangeNotifier {
       _themeMode = ThemeMode.light;
     } else if (theme == 'dark') {
       _themeMode = ThemeMode.dark;
-    } else {
+    } else if (theme == 'system') {
       _themeMode = ThemeMode.system;
+    } else {
+      // Nothing saved yet: light, not system.
+      _themeMode = ThemeMode.light;
     }
     _firstDayOfWeek = prefs.getInt(_keyFirstDay) ?? 1;
     notifyListeners();

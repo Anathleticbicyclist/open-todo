@@ -182,6 +182,11 @@ class AppStrings {
       'emptyMyDayTitle': 'Your day is clear',
       'emptyMyDaySubtitle':
           'Add a task below, or tap the sun icon on a task to add it to My Day.',
+      'welcomeTask1': 'Welcome to Open To Do',
+      'welcomeNote1':
+          'Tick the circle to complete a task, tap a task for details.',
+      'welcomeTask2': 'Tap + to add your first task',
+      'welcomeTask3': 'Star a task to mark it as important',
       'emptyImportantTitle': 'No important tasks',
       'emptyImportantSubtitle': 'Star a task to mark it as important.',
       'emptyPlannedTitle': 'Nothing planned',
@@ -214,7 +219,7 @@ class AppStrings {
           'All completed tasks will be permanently deleted.',
       'about': 'About',
       'aboutText':
-          'Version 1.0.0\nA free, open-source, local-first to-do app.\nYour data stays on your device — no account, no server.\n\nReminders are shown in the app; v1 does not send OS notifications. See the README roadmap.',
+          'Version 0.1.3\nA free, open-source, local-first to-do app.\nYour data stays on your device — no account, no server.\n\nReminders are shown in the app; v1 does not send OS notifications. See the README roadmap.',
       'sourceCode': 'Source code',
       'language': 'Language',
       'exportSaved': 'Backup saved.',
@@ -301,6 +306,10 @@ class AppStrings {
       'stepsOf': '{done}/{total}',
       'emptyMyDayTitle': '今天没有安排',
       'emptyMyDaySubtitle': '在下方添加任务，或点任务上的太阳图标加入“我的一天”。',
+      'welcomeTask1': '欢迎使用 Open To Do',
+      'welcomeNote1': '点左侧圆圈完成任务，点任务打开详情。',
+      'welcomeTask2': '点右下角 + 添加你的第一个任务',
+      'welcomeTask3': '给重要任务点一颗星',
       'emptyImportantTitle': '没有重要任务',
       'emptyImportantSubtitle': '给任务加星标即可标记为重要。',
       'emptyPlannedTitle': '暂无计划',

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_strings.dart';
 
@@ -89,6 +90,13 @@ class TodoStore extends ChangeNotifier {
 
   Future<void> init() async {
     await _db.resetStaleMyDay();
+    // First run with an empty task list: seed three welcome tasks so the
+    // app never opens on a blank page. Runs once, ever.
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('welcome_seeded') != true) {
+      await _db.seedWelcomeTasksIfEmpty();
+      await prefs.setBool('welcome_seeded', true);
+    }
     await refreshAll();
   }
 

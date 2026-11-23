@@ -62,6 +62,11 @@ class _WideLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedTask = _selectedTask();
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => showAddTaskDialog(context, store),
+        tooltip: AppStrings.tr('addTaskTooltip'),
+        child: const Icon(Icons.add),
+      ),
       body: Row(
         children: [
           SizedBox(
@@ -137,6 +142,11 @@ class _NarrowLayout extends StatelessWidget {
                 ? store.listNameOf(store.selectedListId)
                 : AppStrings.tr('appTitle'))),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => showAddTaskDialog(context, store),
+        tooltip: AppStrings.tr('addTaskTooltip'),
+        child: const Icon(Icons.add),
+      ),
       drawer: Drawer(
         child: Sidebar(
           store: store,
@@ -160,6 +170,42 @@ class _NarrowLayout extends StatelessWidget {
 }
 
 // -------------------------------------------------------------- task list
+
+/// Big, obvious way to add a task: a dialog with a text field.
+/// Used by the floating + button on every screen size.
+Future<void> showAddTaskDialog(BuildContext context, TodoStore store) async {
+  final controller = TextEditingController();
+  final submitted = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(AppStrings.tr('addTask')),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: AppStrings.tr('addTask'),
+          border: const OutlineInputBorder(),
+        ),
+        textCapitalization: TextCapitalization.sentences,
+        onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(AppStrings.tr('cancel')),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.of(context).pop(controller.text.trim()),
+          child: Text(AppStrings.tr('create')),
+        ),
+      ],
+    ),
+  );
+  if (submitted != null && submitted.isNotEmpty) {
+    await store.addTask(submitted);
+  }
+}
 
 class TaskListArea extends StatefulWidget {
   final TodoStore store;
@@ -205,13 +251,18 @@ class _TaskListAreaState extends State<TaskListArea> {
   Widget build(BuildContext context) {
     final isPlanned = !store.isSearching &&
         store.selectedListId == TaskList.plannedId;
+    final isMyDay = !store.isSearching &&
+        store.selectedListId == TaskList.myDayId;
     final tasks = store.isSearching ? store.searchResults : store.tasks;
 
     return Column(
       children: [
-        // Header.
+        // Header. My Day gets the Microsoft To Do hero treatment: a deep
+        // blue band with a big white title and the date, so the page never
+        // looks like a blank grey sheet.
         Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+          color: isMyDay ? const Color(0xFF005A9E) : null,
+          padding: EdgeInsets.fromLTRB(20, isMyDay ? 28 : 16, 12, isMyDay ? 20 : 8),
           alignment: Alignment.centerLeft,
           child: Row(
             children: [
@@ -223,10 +274,12 @@ class _TaskListAreaState extends State<TaskListArea> {
                       store.isSearching
                           ? AppStrings.tr('searchResults')
                           : store.listNameOf(store.selectedListId),
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: isMyDay ? 28 : 20,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: isMyDay
+                            ? Colors.white
+                            : AppTheme.textPrimary,
                       ),
                     ),
                     if (!store.isSearching)
@@ -236,17 +289,20 @@ class _TaskListAreaState extends State<TaskListArea> {
                             .textTheme
                             .bodySmall
                             ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
+                              color: isMyDay
+                                  ? Colors.white70
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
                             ),
                       ),
                   ],
                 ),
               ),
               PopupMenuButton<SortBy>(
-                icon: const Icon(Icons.sort),
+                icon: Icon(Icons.sort,
+                    color: isMyDay ? Colors.white : null),
                 tooltip: AppStrings.tr('sort'),
                 onSelected: (s) => store.setSort(s),
                 itemBuilder: (context) => SortBy.values
@@ -291,28 +347,43 @@ class _TaskListAreaState extends State<TaskListArea> {
                       },
                     ),
         ),
-        // Quick add bar.
+        // Quick add bar: big and obvious — a tinted band with a blue +
+        // button and a filled send button, so there is always a visible
+        // place to add a task.
         Container(
           decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2D2C2B)
+                : const Color(0xFFEAF3FB),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? const Color(0xFF3B3A39)
-                    : const Color(0xFFEDEBE9),
+                    : const Color(0xFFBDD7EE),
               ),
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.add, color: Color(0xFF0078D4)),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF0078D4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add,
+                        color: Colors.white, size: 20),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _addController,
+                      style: const TextStyle(fontSize: 16),
                       decoration: InputDecoration(
                         hintText: AppStrings.tr('addTask'),
                         border: InputBorder.none,
@@ -349,10 +420,20 @@ class _TaskListAreaState extends State<TaskListArea> {
                       child: Icon(Icons.wb_sunny_outlined,
                           size: 18, color: Color(0xFF0078D4)),
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_upward),
-                    tooltip: AppStrings.tr('addTaskTooltip'),
-                    onPressed: _submitAdd,
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF0078D4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_upward,
+                          color: Colors.white, size: 20),
+                      tooltip: AppStrings.tr('addTaskTooltip'),
+                      onPressed: _submitAdd,
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
                 ],
               ),

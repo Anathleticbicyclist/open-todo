@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/step_item.dart';
 import '../models/task_item.dart';
 import '../models/task_list.dart';
@@ -257,6 +258,46 @@ class AppDatabase {
       }
       await txn.delete('tasks', where: 'completed = 1');
     });
+  }
+
+  /// Seeds three welcome tasks the first time the app runs with an empty
+  /// task list (fresh install, or an existing install that never had a
+  /// task). Called once, guarded by a flag in the store, so a user who
+  /// deletes everything on purpose does not get them back.
+  Future<void> seedWelcomeTasksIfEmpty() async {
+    final db = await database;
+    final rows = await db.rawQuery('SELECT COUNT(*) AS c FROM tasks');
+    if ((Sqflite.firstIntValue(rows) ?? 0) > 0) return;
+    final now = DateTime.now();
+    final today = _dateOnly(now);
+    final welcome = [
+      TaskItem(
+        listId: TaskList.defaultListId,
+        title: AppStrings.tr('welcomeTask1'),
+        note: AppStrings.tr('welcomeNote1'),
+        myDay: true,
+        myDayDate: today,
+        createdAt: now,
+      ),
+      TaskItem(
+        listId: TaskList.defaultListId,
+        title: AppStrings.tr('welcomeTask2'),
+        myDay: true,
+        myDayDate: today,
+        createdAt: now,
+      ),
+      TaskItem(
+        listId: TaskList.defaultListId,
+        title: AppStrings.tr('welcomeTask3'),
+        important: true,
+        myDay: true,
+        myDayDate: today,
+        createdAt: now,
+      ),
+    ];
+    for (final task in welcome) {
+      await insertTask(task);
+    }
   }
 
   /// My Day resets every day: tasks added to My Day on a previous day drop
