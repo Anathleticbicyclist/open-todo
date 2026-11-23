@@ -1,0 +1,36 @@
+name: open_todo
+description: "Open To Do — a free, open-source, local-first to-do app for Windows, Android and iOS. A Microsoft To Do replacement."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Local SQLite storage (mobile) + desktop (Windows/macOS/Linux) via ffi.
+  sqflite: ^2.3.3+1
+  sqflite_common_ffi: ^2.3.3
+  # Local file paths for the database.
+  path_provider: ^2.1.2
+  path: ^1.9.0
+  # Import / export file pickers.
+  file_picker: ^8.0.0+1
+  # Date formatting.
+  intl: ^0.19.0
+  # Persist theme / first-day-of-week settings.
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
